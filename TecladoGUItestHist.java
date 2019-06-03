@@ -1,0 +1,608 @@
+package trabalhoTeclado;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.EOFException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.Arrays;
+
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.plaf.basic.BasicComboBoxUI.ItemHandler;
+
+public class TecladoGUItestHist extends JFrame implements Serializable {
+
+	private ObjectOutputStream output;
+	private FileOutputStream file1;
+	
+	private transient String[] linha1 = { "~", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "+", "Backspace" }; // tamanho
+																												// = 14
+	private transient int[] keyCodeL1 = { KeyEvent.VK_DEAD_TILDE, KeyEvent.VK_1, KeyEvent.VK_2, KeyEvent.VK_3, KeyEvent.VK_4,
+			KeyEvent.VK_5, KeyEvent.VK_6, KeyEvent.VK_7, KeyEvent.VK_8, KeyEvent.VK_9, KeyEvent.VK_0, KeyEvent.VK_MINUS,
+			107, KeyEvent.VK_BACK_SPACE };
+
+	private transient String[] linha2 = { "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\\" }; // tamanho =
+																											// 14
+	private transient int[] keyCodeL2 = { KeyEvent.VK_TAB, KeyEvent.VK_Q, KeyEvent.VK_W, KeyEvent.VK_E, KeyEvent.VK_R,
+			KeyEvent.VK_T, KeyEvent.VK_Y, KeyEvent.VK_U, KeyEvent.VK_I, KeyEvent.VK_O, KeyEvent.VK_P, 91, 93,
+			KeyEvent.VK_BACK_SLASH };
+
+	private transient String[] linha3 = { "Caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "*", "Enter" }; // tamanho =
+																											// 13
+	private transient int[] keyCodeL3 = { KeyEvent.VK_CAPS_LOCK, KeyEvent.VK_A, KeyEvent.VK_S, KeyEvent.VK_D, KeyEvent.VK_F,
+			KeyEvent.VK_G, KeyEvent.VK_H, KeyEvent.VK_J, KeyEvent.VK_K, KeyEvent.VK_L, KeyEvent.VK_SEMICOLON, 106,
+			KeyEvent.VK_ENTER };
+
+	private transient String[] linha4 = { "Shift", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "?", "/\\" }; // tamanho = 12
+	private transient int[] keyCodeL4 = { KeyEvent.VK_SHIFT, KeyEvent.VK_Z, KeyEvent.VK_X, KeyEvent.VK_C, KeyEvent.VK_V,
+			KeyEvent.VK_B, KeyEvent.VK_N, KeyEvent.VK_M, KeyEvent.VK_COMMA, KeyEvent.VK_PERIOD, KeyEvent.VK_SLASH,
+			KeyEvent.VK_UP };
+
+	private transient String[] linha5 = { null, "<", "\\/", ">" }; // tamanho = 04
+	private transient int[] keyCodeL5 = { KeyEvent.VK_SPACE, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_RIGHT };
+	
+	public String getConteudo() {
+		return conteudo;
+	}
+	
+	public void setConteudo(String conteudo) {
+		this.conteudo = conteudo;
+	}
+
+	private Tecla[] botoesLinha1 = new Tecla[linha1.length];
+	private Tecla[] botoesLinha2 = new Tecla[linha2.length];
+	private Tecla[] botoesLinha3 = new Tecla[linha3.length];
+	private Tecla[] botoesLinha4 = new Tecla[linha4.length];
+	private Tecla[] botoesLinha5 = new Tecla[linha5.length];
+
+	private static final int l = 45, i = 5; // "l" para as dimensoes dos botoes das teclas com string unitaria (letras,
+											// etc);
+											// "i" para os insets (espaços entre botoes, linhas e colunas)
+	private transient BotoesPanel botoes;
+	private transient JPanel areaTexto;
+	private transient boolean corrigeDefeitoTextArea = false;
+	private transient JTextArea texto;
+	private transient JPanel panelNotificacoes;
+	private transient JLabel labelNotificacoes, labelResultado;
+
+	private JTextArea historicoText;
+	
+	private String conteudo;
+	private transient String frases[] = { "Um pequeno jabuti xereta viu dez cegonhas felizes.",
+			"Quem traz CD, LP, fax, engov e whisky JB?", "Gazeta publica hoje breve nota de faxina na quermesse.",
+			"Jovem craque belga prediz falhas no xote.", "Bancos fúteis pagavam-lhe queijo, whisky e xadrez." };
+	private transient int  fraseSelecionada = -1, acerto = 0, erro = 0;
+	
+    private transient ObjectInputStream input;
+    private String leArquivo() {
+    	String textoArquivo = "";
+    	AcaoTeclas a = new AcaoTeclas();
+    	a.criarArquivo();
+    	
+    	return textoArquivo;
+    }
+
+	public TecladoGUItestHist(String vaiProConteudo) {
+		super("pangrama");
+		
+		historicoText.setText(t);
+		
+		JTabbedPane tabbedPane = new JTabbedPane();
+
+		JPanel abaTeclado = new JPanel();
+		tabbedPane.addTab("Teclado", null, abaTeclado, "Teclado");
+		JPanel abaPangramas = new JPanel();
+		abaPangramas.setLayout(new BorderLayout());
+		tabbedPane.addTab("Pangramas", null, abaPangramas, "Pangramas");
+		JPanel historico = new JPanel();
+		
+		historicoText = new JTextArea();
+		historicoText.setText(leArquivo());
+		historicoText.setEditable(false);
+		historicoText.setVisible(true);
+		historicoText.setPreferredSize(new Dimension(900, 650));
+		historico.add(historicoText);
+		tabbedPane.addTab("Histórico", null, historico, "Histórico");
+		add(tabbedPane);
+
+		JPanel frasesPangramas = new JPanel();
+		frasesPangramas.setLayout(new GridLayout(5, 1));
+		JLabel explicaPangrama = new JLabel(
+				"Selecione um dos pangramas a seguir, e retorne a aba \"Teclado\" para testar sua habilidade:");
+		explicaPangrama.setPreferredSize(new Dimension(500, 125));
+		JPanel vazio = new JPanel();
+		vazio.setPreferredSize(new Dimension(500, 300));
+		abaPangramas.add(vazio, BorderLayout.SOUTH);
+		abaPangramas.add(frasesPangramas, BorderLayout.CENTER);
+		abaPangramas.add(explicaPangrama, BorderLayout.NORTH);
+
+		JRadioButton[] botoesFrases = new JRadioButton[frases.length];
+		ButtonGroup selecionaPangrama = new ButtonGroup();
+		for (int count = 0; count < frases.length; count++) {
+			botoesFrases[count] = new JRadioButton(frases[count]);
+			frasesPangramas.add(botoesFrases[count]);
+			selecionaPangrama.add(botoesFrases[count]);
+			botoesFrases[count].addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					for (int count = 0; count < botoesFrases.length; count++) {
+						if (botoesFrases[count].isSelected()) {
+							System.out.println(frases[count].length());
+							labelNotificacoes.setText(frases[count]);
+							fraseSelecionada = count;
+							acerto = 0;
+							erro = 0;
+							labelResultado.setText("");
+							break;
+						} // end if
+					} // end for
+				}
+			});
+		}
+
+		abaTeclado.setLayout(new BorderLayout());
+		String abaTeste = "Teste sua habilidade escolhendo um pangrama na aba \"Pangramas\".";
+		panelNotificacoes = new JPanel();
+		panelNotificacoes.setLayout(new BorderLayout());
+		labelNotificacoes = new JLabel(abaTeste, SwingConstants.CENTER);
+		labelNotificacoes.setPreferredSize(new Dimension(100, 40));
+		labelResultado = new JLabel("", SwingConstants.CENTER);
+		labelResultado.setPreferredSize(new Dimension(100, 10));
+		panelNotificacoes.add(labelNotificacoes, BorderLayout.NORTH);
+		panelNotificacoes.add(labelResultado, BorderLayout.CENTER);
+		abaTeclado.add(panelNotificacoes, BorderLayout.CENTER);
+		abaTeclado.add(new JPanel(), BorderLayout.WEST);
+		abaTeclado.add(new JPanel(), BorderLayout.EAST);
+
+		areaTexto = new JPanel();
+		areaTexto.setBackground(Color.WHITE);
+		areaTexto.setPreferredSize(new Dimension(500, 250));
+		texto = new JTextArea();
+		texto.setEditable(true);
+		texto.addKeyListener(new AcaoTeclas());
+		// for (int i=0; i<texto.getInputMap().size(); i++ )
+		areaTexto.add(texto);
+		abaTeclado.add(areaTexto, BorderLayout.NORTH);
+
+		botoes = new BotoesPanel();
+		botoes.constraints.anchor = GridBagConstraints.WEST;
+		botoes.constraints.insets = new Insets(0, i, i, 0); // define espaço entre cada botao e cada linha de botoes
+		abaTeclado.add(botoes, BorderLayout.SOUTH);
+
+		// linha 1 e 2
+		for (int count = 0; count < linha1.length; count++) {
+
+			// linha 1
+			botoesLinha1[count] = new Tecla(linha1[count], keyCodeL1[count]);
+
+			// definindo tamanho dos botoes de acordo com a posição no array dos botoes
+			if (count < linha1.length - 1)
+				botoesLinha1[count].setPreferredSize(new Dimension(l, l));
+			else if (count == linha1.length - 1) // tamanho do backspace
+				botoesLinha1[count].setPreferredSize(new Dimension(((int) (2 * l + 2 * i)), l)); // Backspace
+
+			// adicionando e organizando alinhamento dos botoes
+			if (count == 0)
+				botoes.addComponent(botoesLinha1[count], 1, count, 1, 1);
+			else if (count == 1) { // coloca o 2º butao na 1ª celula (coluna)
+				botoes.constraints.insets = new Insets(0, l + 2 * i, i, 0);
+				botoes.addComponent(botoesLinha1[count], 1, count - 1, 1, 1);
+				botoes.constraints.insets = new Insets(0, i, i, 0);
+			} else if (count == 2) { // coloca o 3º butao na 1ª celula (coluna)
+				botoes.constraints.insets = new Insets(0, 2 * l + 3 * i, i, 0);
+				botoes.addComponent(botoesLinha1[count], 1, count - 2, 1, 1);
+			} else if (count == botoesLinha1.length - 1) { // regula a largura do backspace p/ 3 colunas
+				botoes.constraints.insets = new Insets(0, i, i, -(i + 3));
+				botoes.addComponent(botoesLinha1[count], 1, count - 2, 3, 1);
+				botoes.constraints.insets = new Insets(0, i, i, 0);
+			} else
+				botoes.addComponent(botoesLinha1[count], 1, count - 2, 1, 1);
+
+			// linha2
+			botoesLinha2[count] = new Tecla(linha2[count], keyCodeL2[count]);
+
+			// definindo tamanho dos botoes de acordo com a posição no array dos botoes
+			if (count > 0)
+				botoesLinha2[count].setPreferredSize(new Dimension(l, l));
+			else
+				botoesLinha2[count].setPreferredSize(new Dimension(((int) (1.5 * l + i)), l)); // Tab
+
+			// adicionando e organizando alinhamento dos botoes
+			if (count == 0)
+				botoes.addComponent(botoesLinha2[count], 2, count, 1, 1);
+			else if (count == 1) {
+				botoes.constraints.insets = new Insets(0, (int) (1.5 * l + i) + 2 * i, i, 0);
+				botoes.addComponent(botoesLinha2[count], 2, count - 1, 1, 1);
+				botoes.constraints.insets = new Insets(0, i, i, 0);
+			} else if (count == botoesLinha2.length - 1) {
+				botoes.constraints.insets = new Insets(0, i, i, -(i + 3));
+				botoes.addComponent(botoesLinha2[count], 2, count - 1, 2, 1);
+			} else {// if ( count == 2 ) {
+				botoes.constraints.insets = new Insets(0, -(((l - i) / 2) - (int) i / 2), i, 0);
+				botoes.addComponent(botoesLinha2[count], 2, count - 1, 1, 1);
+				botoes.constraints.insets = new Insets(0, i, i, 0);
+			}
+		}
+
+		for (int count = 0; count < linha3.length; count++) {
+
+			botoesLinha3[count] = new Tecla(linha3[count], keyCodeL3[count]);
+
+			// definindo tamanho dos botoes de acordo com a posição no array dos botoes
+			if (count == 0)
+				botoesLinha3[count].setPreferredSize(new Dimension(((int) (1.5 * l + i)), l)); // Caps (= tamanho do Tab
+																								// -> ver formula)
+			else if (count > 0 && count < linha3.length - 1)
+				botoesLinha3[count].setPreferredSize(new Dimension(l, l));
+			else
+				botoesLinha3[count].setPreferredSize(new Dimension((int) (2 * l + i), l)); // Enter
+
+			// adicionando e organizando alinhamento dos botoes
+			if (count == 0)
+				botoes.addComponent(botoesLinha3[count], 3, count, 1, 1);
+			else if (count == 1) {
+				botoes.constraints.insets = new Insets(0, (int) (1.5 * l + i) + 2 * i, i, 0);
+				botoes.addComponent(botoesLinha3[count], 3, count - 1, 1, 1);
+				botoes.constraints.insets = new Insets(0, i, i, 0);
+			} else if (count == linha3.length - 1) { // condição para o ultimo botao (enter) ocupar 2 colunas (p/
+														// alinhar os botoes)
+				botoes.constraints.insets = new Insets(0, -(((l - i) / 2) - (int) i / 2), i, -(i + 3));
+				botoes.addComponent(botoesLinha3[count], 3, count - 1, 2, 1);
+				botoes.constraints.insets = new Insets(0, i, i, 0);
+			} else {
+				botoes.constraints.insets = new Insets(0, -(((l - i) / 2) - (int) i / 2), i, 0);
+				botoes.addComponent(botoesLinha3[count], 3, count - 1, 1, 1);
+			}
+
+		}
+
+		for (int count = 0; count < linha4.length; count++) {
+
+			botoesLinha4[count] = new Tecla(linha4[count], keyCodeL4[count]);
+
+			// tamanho
+			if (count == 0)
+				botoesLinha4[count].setPreferredSize(new Dimension(((int) (2 * l + i)), l)); // Shift (= tamanho do Tab
+																								// -> ver formula)
+			else
+				botoesLinha4[count].setPreferredSize(new Dimension(l, l));
+
+			// add e organizar
+			if (count == 0)
+				botoes.addComponent(botoesLinha4[count], 4, count, 1, 1);
+			else if (count == 1) {
+				botoes.constraints.insets = new Insets(0, (int) (2 * l + i) + 2 * i, i, 0);
+				botoes.addComponent(botoesLinha4[count], 4, count - 1, 1, 1);
+				botoes.constraints.insets = new Insets(0, i, i, 0);
+			} else if (count == linha4.length - 1) {
+				botoes.constraints.insets = new Insets(0, -((int) (l / 2) - 4), i, -(i + 3)); // AQUI FOI NA SORTE
+																								// 4 (entao cuidado ao
+																								// alterar as
+																								// constantes!!!)
+				botoes.addComponent(botoesLinha4[count], 4, count/* (+1) */, 1, 1); // separar a /\ dos outros bts
+			} else
+				botoes.addComponent(botoesLinha4[count], 4, count - 1, 1, 1);
+
+		}
+
+		for (int count = 0; count < linha5.length; count++) {
+
+			botoesLinha5[count] = new Tecla(linha5[count], keyCodeL5[count]);
+
+			// tamanho
+			if (count == 0)
+				botoesLinha5[count].setPreferredSize(new Dimension(((int) (6 * l + 8 * i - 1)), l)); // barra de espaço
+			else
+				botoesLinha5[count].setPreferredSize(new Dimension(l, l));
+
+			// add e org
+			if (count == 0) {
+				botoes.constraints.insets = new Insets(0, 0, i, 0);
+				botoes.addComponent(botoesLinha5[count], 5, 2, 7, 1); // barra de espaco
+			} else if (count == botoesLinha5.length - 1) {
+				botoes.constraints.insets = new Insets(0, i, i, -(i + 3));
+				botoes.addComponent(botoesLinha5[count], 5, 9 + count, 2, 1);
+			} else {
+				botoes.constraints.insets = new Insets(0, -((int) (l / 2) - 4), i, 0);
+				// botoes.constraints.insets = new Insets(0, i, i, 0);
+				botoes.addComponent(botoesLinha5[count], 5, 9 + count, 1, 1);
+			}
+		}
+
+	}
+
+	public class BotoesPanel extends JPanel {
+
+		private GridBagLayout layout;
+		private GridBagConstraints constraints;
+
+		public BotoesPanel() {
+			layout = new GridBagLayout();
+			setLayout(layout);
+			constraints = new GridBagConstraints();
+			constraints.anchor = GridBagConstraints.WEST;
+		}
+
+		private void addComponent(Component component, int row, int column, int width, int height) {
+			constraints.gridx = column;
+			constraints.gridy = row;
+			constraints.gridwidth = width;
+			constraints.gridheight = height;
+			layout.setConstraints(component, constraints);
+			add(component);
+		}
+	}
+
+	public class Tecla extends JButton {
+		public final int keyCode;
+		public final String nome;
+
+		public Tecla(String nome, int keyCode) {
+			this.keyCode = keyCode;
+			this.nome = nome;
+			this.setText(nome);
+			this.setBorder(new RoundedBorder(10));
+			this.setOpaque(true);
+		}
+	}
+
+	public static class RoundedBorder implements Border {
+
+		private int radius;
+
+		RoundedBorder(int radius) {
+			this.radius = radius;
+		}
+
+		public Insets getBorderInsets(Component c) {
+			return new Insets(this.radius + 1, this.radius + 1, this.radius + 2, this.radius);
+		}
+
+		public boolean isBorderOpaque() {
+			return true;
+		}
+
+		@Override
+		public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+			g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
+		}
+	}
+
+	public class TeclasInvalidasException extends Exception {
+		int kc;
+
+		public TeclasInvalidasException(int keyCode) {
+			kc = keyCode;
+		}
+
+		public String toString() {
+			return "Tecla inválida!";
+		}
+	}
+
+	public class AcaoTeclas implements KeyListener {
+		
+		private Color padrao = (new JButton().getBackground());
+		
+		public void analisarTecla(int keyCode) throws TeclasInvalidasException {
+			int achou = 0;
+			int quant = keyCodeL1.length + keyCodeL2.length + keyCodeL3.length + keyCodeL4.length + keyCodeL5.length;
+			int[] keyCodes = new int[quant];
+			System.arraycopy(keyCodeL1, 0, keyCodes, 0, keyCodeL1.length);
+	        System.arraycopy(keyCodeL2, 0, keyCodes, keyCodeL1.length, keyCodeL2.length);
+	        System.arraycopy(keyCodeL3, 0, keyCodes, keyCodeL1.length+keyCodeL2.length, keyCodeL3.length);
+	        System.arraycopy(keyCodeL4, 0, keyCodes, keyCodeL1.length+keyCodeL2.length+keyCodeL3.length, keyCodeL4.length);
+	        System.arraycopy(keyCodeL5, 0, keyCodes, keyCodeL1.length+keyCodeL2.length+keyCodeL3.length+keyCodeL4.length, keyCodeL5.length);
+	        for (int i=0; i < quant; i++)
+	        	if (keyCode == keyCodes[i])
+	        		achou++;
+	        if (achou == 0)
+		        throw new TeclasInvalidasException(keyCode);
+		         System.out.println("No error in prog. no exception caught");
+		   }
+
+		@Override // trata pressionamento de qualquer tecla
+		public void keyPressed(KeyEvent event)  {
+			try {
+				analisarTecla(event.getExtendedKeyCode()); }
+			catch(TeclasInvalidasException ex1) {
+		         JOptionPane.showMessageDialog(null, ex1);
+		      }
+			labelResultado.setText(""); // limpa a area de resultados ao iniciar uma nova tentativa!
+			for (int count = 0; count < linha1.length; count++) {
+				if (event.getExtendedKeyCode() == keyCodeL1[count])
+					botoesLinha1[count].setBackground(Color.LIGHT_GRAY);
+				else if (event.getExtendedKeyCode() == keyCodeL2[count])
+					botoesLinha2[count].setBackground(Color.LIGHT_GRAY);
+				else if (count == 0 && event.getExtendedKeyCode() == keyCodeL3[count])
+					if (botoesLinha3[0].getBackground() == padrao) // logica que mantem o CAPS aceso enquanto estiver ativo
+						botoesLinha3[0].setBackground(Color.LIGHT_GRAY);
+					else
+						botoesLinha3[0].setBackground(padrao);
+				else if (count != 0 && count < keyCodeL3.length && event.getExtendedKeyCode() == keyCodeL3[count]) {
+					botoesLinha3[count].setBackground(Color.LIGHT_GRAY);
+					if (count == keyCodeL3.length - 1)
+						teclaEnter();
+				} else if (count < keyCodeL4.length && event.getExtendedKeyCode() == keyCodeL4[count])
+					botoesLinha4[count].setBackground(Color.LIGHT_GRAY);
+				else if (count < keyCodeL5.length && event.getExtendedKeyCode() == keyCodeL5[count])
+					botoesLinha5[count].setBackground(Color.LIGHT_GRAY);
+			}
+		}
+		
+		public void criarArquivo() {
+			try {
+                file1 = new FileOutputStream("Frases.ser", true);
+                output = new ObjectOutputStream(file1);
+                
+            } catch (FileNotFoundException e) { // verifica se o arquivo existe, para nao criar um novo
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+		}
+		
+		public void teclaEnter() {
+			conteudo = texto.getText(); // IMPLEMENTAR TRY CATCH AQUI!
+			if (corrigeDefeitoTextArea && conteudo.startsWith("")) // lógica para eliminar o espaço em branco introduzido pelo ENTER!
+				conteudo = conteudo.substring(1, conteudo.length());
+			System.out.println("CONTEUDO = " + conteudo);
+			if (fraseSelecionada != -1)
+				if (conteudo.length() > frases[fraseSelecionada].length()) {
+					erro += conteudo.length()-frases[fraseSelecionada].length();
+					for (int i = 0; i < frases[fraseSelecionada].length(); i++)
+						if (frases[fraseSelecionada].charAt(i) == conteudo.charAt(i))
+							acerto++;
+						else
+							erro++;
+				}
+				else
+					if (conteudo.length() <= frases[fraseSelecionada].length()) {
+						erro += frases[fraseSelecionada].length()-conteudo.length();
+						for (int i = 0; i < conteudo.length(); i++)
+							if (frases[fraseSelecionada].charAt(i) == conteudo.charAt(i))
+								acerto++;
+							else
+								erro++;
+					}
+			labelNotificacoes.setText("<html>"+frases[fraseSelecionada] +"<br/>"+conteudo+"</html>");
+			if (acerto == frases[fraseSelecionada].length())
+				labelResultado.setText("<html>A frase foi digitada corretamente!<br/>"
+					+ "Quantidade de acertos: "+acerto+ "<br/>Quantidade de erros: "+erro+" </html>");
+			else
+				labelResultado.setText("<html>Observe acima que a frase NÃO foi digitada corretamente!<br/>"
+					+ "Quantidade de acertos: "+acerto+ "<br/>Quantidade de erros: "+erro+"<br/>"
+							+ "Para tentar novamente o mesmo pangrama, continue digitando... </html>");
+			criarArquivo();
+			/*try {
+                file1 = new FileOutputStream("Frases.ser", true);
+                output = new ObjectOutputStream(file1);
+            } catch (FileNotFoundException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+*/            try {
+                output.writeObject(conteudo);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            try {
+                output.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+           
+			texto.setText(null);
+			conteudo = null;
+			acerto = 0;
+			erro = 0;
+			corrigeDefeitoTextArea = true;
+		}
+
+	@Override
+	public void keyReleased(KeyEvent event) {
+		for (int count = 0; count < linha1.length; count++) {
+			if (event.getExtendedKeyCode() == keyCodeL1[count])
+				botoesLinha1[count].setBackground(padrao);
+			else if (event.getExtendedKeyCode() == keyCodeL2[count])
+				botoesLinha2[count].setBackground(padrao);
+			else if (count != 0 && count < keyCodeL3.length && event.getExtendedKeyCode() == keyCodeL3[count])
+				botoesLinha3[count].setBackground(padrao);
+			else if (count < keyCodeL4.length && event.getExtendedKeyCode() == keyCodeL4[count])
+				botoesLinha4[count].setBackground(padrao);
+			else if (count < keyCodeL5.length && event.getExtendedKeyCode() == keyCodeL5[count])
+				botoesLinha5[count].setBackground(padrao);
+		}
+	}
+
+	@Override
+	public void keyTyped(KeyEvent arg0) {
+	}
+}
+
+/*public class ReadSequentialFile {
+	private ObjectInputStream input;
+
+	// enable user to select file to open
+	public void openFile() {
+		try // open file
+		{
+			input = new ObjectInputStream(new FileInputStream("Frases.ser"));
+		} // end try
+		catch (IOException ioException) {
+			System.err.println("Error opening file.");
+		} // end catch
+	} // end method openFile
+
+	// read record from file
+	public void readRecords() {
+		TecladoGUI3 record;
+		String a = ("Tentativa");
+		historicoTexto.setText("<html>" + a + "<br/>" + conteudo + "<html>");
+		try // input the values from the file
+		{
+			while (true) {
+				record = (TecladoGUI3) input.readObject();
+
+				// display record contents
+				System.out.printf("%-12s\n", record.getConteudo());
+				historicoTexto.setText(a);// record.getConteudo());//+record.getConteudo());
+			} // end while
+		} // end try
+		catch (EOFException endOfFileException) {
+			return; // end of file was reached
+		} // end catch
+		catch (ClassNotFoundException classNotFoundException) {
+			System.err.println("Unable to create object.");
+		} // end catch
+		catch (IOException ioException) {
+			System.err.println("Error during reading from file.");
+		} // end catch
+	} // end method readRecords
+
+	// close file and terminate application
+	public void closeFile() {
+		try // close file and exit
+		{
+			if (input != null)
+				input.close();
+			System.exit(0);
+		} // end try
+		catch (IOException ioException) {
+			System.err.println("Error closing file.");
+			System.exit(1);
+		} // end catch
+	} // end method closeFile
+
+	} // end class ReadSequentialFile
+*/
+	public static void main(String[] args) {
+		TecladoGUItestHist print = new TecladoGUItestHist("");     
+		/*ReadSequentialFile application = new ReadSequentialFile();
+		application.openFile();
+	    application.readRecords(print);
+	    application.closeFile();   	*/
+		print.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		print.setSize(950, 700); // set frame size
+		print.setVisible(true);// display frame
+	} //
+}
