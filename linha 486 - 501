@@ -1,0 +1,17 @@
+
+				try {
+					name = new File("Frases.ser");
+					System.out.println("name "+name);
+					if (name.exists()) {
+						
+						System.out.println("ja existe");	
+						while (true) {
+							String record;
+							try {
+								input = new ObjectInputStream(new FileInputStream("Frases.ser"));
+								record = (String) input.readObject();
+								System.out.println(record);
+							} catch (ClassNotFoundException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
