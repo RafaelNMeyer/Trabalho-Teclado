@@ -74,7 +74,6 @@ public class TecladoGUI extends JFrame {
 		} catch (NullPointerException vazio) {
 			// exceção para a primeira leitura do arquivo ( pois o arquivo estará vazio )
 		}
-		manager.deleteFile();
 		manager.closeFileOutput();
 
 		// lógica para atribuir o conteudo capturado do arquivo serializado para a
